@@ -36,7 +36,9 @@ class _BasicPageState extends State<BasicPage> {
                     child: Text(
                       'Emergency Stop',
                       style: TextStyle(color: Colors.red),
-                    ))
+                    )
+                ),
+                ReadMotor()
               ],
             )),
       ),
@@ -77,7 +79,7 @@ class _BasicPageState extends State<BasicPage> {
     //await
     await client.connect();
 
-    cli?.writeSingleRegister(124, 102);
+    client.writeSingleRegister(124, 102);
     //TODO: why 124
   }
 
@@ -87,4 +89,53 @@ class _BasicPageState extends State<BasicPage> {
   }
 
   void _readSpeed() {}
+}
+
+class ReadMotor extends StatefulWidget {
+  @override
+  _ReadMotorState createState() => _ReadMotorState();
+}
+
+class _ReadMotorState extends State<ReadMotor> {
+  ModbusClient? cli;
+  int speed = 1;
+
+  void _connect() async {
+    Logger.root.level = Level.ALL;
+    Logger.root.onRecord.listen((LogRecord rec) {
+      print(
+          '${rec.level.name}: ${rec.time} [${rec.loggerName}]: ${rec.message}');
+    });
+
+    var client = modbus.createTcpClient(
+      '10.10.10.11',
+      port: 502,
+      mode: modbus.ModbusMode.rtu,
+    );
+
+    //await
+    await client.connect();
+    cli = client;
+  }
+
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text('immediate speed: $speed'),
+        TextButton(onPressed: _refresh, child: Text('read'))
+      ],
+    );
+  }
+
+  void _refresh() async {
+    _connect();
+    var speed_now;
+    speed_now = await cli?.readInputRegisters(10, 1);
+    speed_now.toString();
+
+    setState(() {
+      speed = speed_now;
+    });
+  }
 }
